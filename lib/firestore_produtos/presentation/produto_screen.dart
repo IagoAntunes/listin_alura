@@ -14,15 +14,16 @@ class ProdutoScreen extends StatefulWidget {
 }
 
 class _ProdutoScreenState extends State<ProdutoScreen> {
-  List<Produto> listaProdutosPlanejados = [
-    Produto(id: "ADASD", name: "Maçã", isComprado: false),
-    Produto(id: "UUID", name: "Pêra", isComprado: false),
-  ];
+  List<Produto> listaProdutosPlanejados = [];
 
-  List<Produto> listaProdutosPegos = [
-    Produto(id: "UUID", name: "Laranja", amount: 5, price: 1, isComprado: true),
-  ];
+  List<Produto> listaProdutosPegos = [];
   FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,106 +146,126 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
           padding: const EdgeInsets.all(32.0),
 
           // Formulário com Título, Campo e Botões
-          child: ListView(
-            children: [
-              Text(labelTitle, style: Theme.of(context).textTheme.headline5),
-              TextFormField(
-                controller: nameController,
-                keyboardType: TextInputType.name,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  label: Text("Nome do Produto*"),
-                  icon: Icon(Icons.abc_rounded),
-                ),
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              TextFormField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: false,
-                  decimal: false,
-                ),
-                decoration: const InputDecoration(
-                  label: Text("Quantidade"),
-                  icon: Icon(Icons.numbers),
-                ),
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              TextFormField(
-                controller: priceController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  signed: false,
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  label: Text("Preço"),
-                  icon: Icon(Icons.attach_money_rounded),
-                ),
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(labelSkipButton),
+          child: RefreshIndicator(
+            onRefresh: () {
+              return refresh();
+            },
+            child: ListView(
+              children: [
+                Text(labelTitle, style: Theme.of(context).textTheme.headline5),
+                TextFormField(
+                  controller: nameController,
+                  keyboardType: TextInputType.name,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    label: Text("Nome do Produto*"),
+                    icon: Icon(Icons.abc_rounded),
                   ),
-                  const SizedBox(
-                    width: 16,
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: false,
+                    decimal: false,
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Criar um objeto Produto com as infos
-                      Produto produto = Produto(
-                        id: const Uuid().v1(),
-                        name: nameController.text,
-                        isComprado: isComprado,
-                      );
-
-                      // Usar id do model
-                      if (model != null) {
-                        produto.id = model.id;
-                      }
-
-                      if (amountController.text != "") {
-                        produto.amount = double.parse(amountController.text);
-                      }
-
-                      if (priceController.text != "") {
-                        produto.price = double.parse(priceController.text);
-                      }
-
-                      // TODO: Salvar no Firestore
-                      firestore
-                          .collection('listins')
-                          .doc(widget.listin.id)
-                          .collection('produtos')
-                          .doc(produto.id)
-                          .set(produto.toMap());
-                      // Atualizar a lista
-                      refresh();
-
-                      // Fechar o Modal
-                      Navigator.pop(context);
-                    },
-                    child: Text(labelConfirmationButton),
+                  decoration: const InputDecoration(
+                    label: Text("Quantidade"),
+                    icon: Icon(Icons.numbers),
                   ),
-                ],
-              )
-            ],
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                TextFormField(
+                  controller: priceController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    signed: false,
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    label: Text("Preço"),
+                    icon: Icon(Icons.attach_money_rounded),
+                  ),
+                ),
+                const SizedBox(
+                  height: 16,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: Text(labelSkipButton),
+                    ),
+                    const SizedBox(
+                      width: 16,
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Criar um objeto Produto com as infos
+                        Produto produto = Produto(
+                          id: const Uuid().v1(),
+                          name: nameController.text,
+                          isComprado: isComprado,
+                        );
+
+                        // Usar id do model
+                        if (model != null) {
+                          produto.id = model.id;
+                        }
+
+                        if (amountController.text != "") {
+                          produto.amount = double.parse(amountController.text);
+                        }
+
+                        if (priceController.text != "") {
+                          produto.price = double.parse(priceController.text);
+                        }
+
+                        // TODO: Salvar no Firestore
+                        firestore
+                            .collection('listins')
+                            .doc(widget.listin.id)
+                            .collection('produtos')
+                            .doc(produto.id)
+                            .set(produto.toMap());
+                        // Atualizar a lista
+                        refresh();
+
+                        // Fechar o Modal
+                        Navigator.pop(context);
+                      },
+                      child: Text(labelConfirmationButton),
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  refresh() {}
+  refresh() async {
+    List<Produto> temp = [];
+    QuerySnapshot<Map<String, dynamic>> snapshot = await firestore
+        .collection('listins')
+        .doc(widget.listin.id)
+        .collection('produtos')
+        .get();
+
+    for (var doc in snapshot.docs) {
+      Produto produto = Produto.fromMap(doc.data());
+      temp.add(produto);
+    }
+    setState(() {
+      listaProdutosPlanejados = temp;
+    });
+  }
 }
