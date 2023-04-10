@@ -69,6 +69,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
               return ListTileProduto(
                 produto: produto,
                 isComprado: false,
+                showModal: showFormModal,
               );
             }),
           ),
@@ -90,6 +91,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
               return ListTileProduto(
                 produto: produto,
                 isComprado: true,
+                showModal: showFormModal,
               );
             }),
           ),
