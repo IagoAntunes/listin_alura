@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_firestore_first/firestore_produtos/presentation/produto_screen.dart';
 import 'package:uuid/uuid.dart';
 import '../models/listin.dart';
 
@@ -84,6 +85,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ListTile(
                         onLongPress: () {
                           showFormModal(model: model);
+                        },
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProdutoScreen(listin: model),
+                            ),
+                          );
                         },
                         leading: const Icon(Icons.list_alt_rounded),
                         title: Text(model.name),
