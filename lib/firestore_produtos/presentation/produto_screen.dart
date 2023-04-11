@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -22,11 +24,18 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
   OrdemProduto ordem = OrdemProduto.name;
   bool isDecrescente = false;
 
+  late StreamSubscription listener;
+
   @override
   void initState() {
     super.initState();
     setupListeners();
-    refresh();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    listener.cancel();
   }
 
   @override
@@ -278,7 +287,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                           .doc(produto.id)
                           .set(produto.toMap());
                       // Atualizar a lista
-                      refresh();
+                      //refresh();
 
                       // Fechar o Modal
                       Navigator.pop(context);
@@ -294,9 +303,9 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
     );
   }
 
-  refresh() async {
+  refresh({QuerySnapshot<Map<String, dynamic>>? snapshot}) async {
     List<Produto> temp = [];
-    QuerySnapshot<Map<String, dynamic>> snapshot = await firestore
+    snapshot ??= await firestore
         .collection('listins')
         .doc(widget.listin.id)
         .collection('produtos')
@@ -340,18 +349,18 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
         .doc(produto.id)
         .update({"isComprado": produto.isComprado});
 
-    refresh();
+    // refresh();
   }
 
   setupListeners() {
-    firestore
+    listener = firestore
         .collection('listins')
         .doc(widget.listin.id)
         .collection("produtos")
         .orderBy(ordem.name, descending: isDecrescente)
         .snapshots()
         .listen((snapshot) {
-      print("MUDOU");
+      refresh(snapshot: snapshot);
     });
   }
 }
