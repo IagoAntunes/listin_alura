@@ -59,16 +59,16 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
             itemBuilder: (context) {
               return const [
                 PopupMenuItem(
-                  child: Text("Ordernar por Nome"),
                   value: OrdemProduto.name,
+                  child: Text("Ordernar por Nome"),
                 ),
                 PopupMenuItem(
-                  child: Text("Ordernar por Quantidade"),
                   value: OrdemProduto.amount,
+                  child: Text("Ordernar por Quantidade"),
                 ),
                 PopupMenuItem(
-                  child: Text("Ordernar por Preco"),
                   value: OrdemProduto.price,
+                  child: Text("Ordernar por Preco"),
                 )
               ];
             },
@@ -90,12 +90,12 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: Column(
-                children: const [
+                children: [
                   Text(
-                    "R\$${0}",
-                    style: TextStyle(fontSize: 42),
+                    "R\$${calcularPrecoPegos().toStringAsFixed(2)}",
+                    style: const TextStyle(fontSize: 42),
                   ),
-                  Text(
+                  const Text(
                     "total previsto para essa compra",
                     style: TextStyle(fontStyle: FontStyle.italic),
                   ),
@@ -122,6 +122,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                   isComprado: false,
                   showModal: showFormModal,
                   iconClick: alternarComprado,
+                  trailClick: removerProduto,
                 );
               }),
             ),
@@ -147,6 +148,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                     isComprado: true,
                     showModal: showFormModal,
                     iconClick: alternarComprado,
+                    trailClick: removerProduto,
                   );
                 },
               ),
@@ -279,7 +281,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                         produto.price = double.parse(priceController.text);
                       }
 
-                      // TODO: Salvar no Firestore
+                      //  Salvar no Firestore
                       firestore
                           .collection('listins')
                           .doc(widget.listin.id)
@@ -362,5 +364,24 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
         .listen((snapshot) {
       refresh(snapshot: snapshot);
     });
+  }
+
+  removerProduto(Produto produto) async {
+    await firestore
+        .collection('listins')
+        .doc(widget.listin.id)
+        .collection('produtos')
+        .doc(produto.id)
+        .delete();
+  }
+
+  double calcularPrecoPegos() {
+    double total = 0;
+    for (var produto in listaProdutosPegos) {
+      if (produto.amount != null && produto.price != null) {
+        total += (produto.amount! * produto.price!);
+      }
+    }
+    return total;
   }
 }
