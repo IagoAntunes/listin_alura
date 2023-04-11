@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../../firestore/models/listin.dart';
+import '../helpers/enum_order.dart';
 import '../model/produto.dart';
 import 'widgets/list_tile_produto.dart';
 
@@ -18,6 +19,8 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
 
   List<Produto> listaProdutosPegos = [];
   FirebaseFirestore firestore = FirebaseFirestore.instance;
+  OrdemProduto ordem = OrdemProduto.name;
+  bool isDecrescente = false;
 
   @override
   void initState() {
@@ -28,7 +31,40 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.listin.name)),
+      appBar: AppBar(
+        title: Text(widget.listin.name),
+        actions: [
+          PopupMenuButton(
+            onSelected: (value) {
+              setState(() {
+                if (ordem == value) {
+                  isDecrescente = !isDecrescente;
+                } else {
+                  ordem = value;
+                  isDecrescente = false;
+                }
+              });
+              refresh();
+            },
+            itemBuilder: (context) {
+              return const [
+                PopupMenuItem(
+                  child: Text("Ordernar por Nome"),
+                  value: OrdemProduto.name,
+                ),
+                PopupMenuItem(
+                  child: Text("Ordernar por Quantidade"),
+                  value: OrdemProduto.amount,
+                ),
+                PopupMenuItem(
+                  child: Text("Ordernar por Preco"),
+                  value: OrdemProduto.price,
+                )
+              ];
+            },
+          )
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showFormModal();
@@ -75,6 +111,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                   produto: produto,
                   isComprado: false,
                   showModal: showFormModal,
+                  iconClick: alternarComprado,
                 );
               }),
             ),
@@ -91,14 +128,18 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
               ),
             ),
             Column(
-              children: List.generate(listaProdutosPegos.length, (index) {
-                Produto produto = listaProdutosPegos[index];
-                return ListTileProduto(
-                  produto: produto,
-                  isComprado: true,
-                  showModal: showFormModal,
-                );
-              }),
+              children: List.generate(
+                listaProdutosPegos.length,
+                (index) {
+                  Produto produto = listaProdutosPegos[index];
+                  return ListTileProduto(
+                    produto: produto,
+                    isComprado: true,
+                    showModal: showFormModal,
+                    iconClick: alternarComprado,
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -253,22 +294,13 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
   }
 
   refresh() async {
-    List<Produto> tempPlanejados = await filtrarProdutos(false);
-    List<Produto> tempPegos = await filtrarProdutos(true);
-
-    setState(() {
-      listaProdutosPlanejados = tempPlanejados;
-      listaProdutosPegos = tempPegos;
-    });
-  }
-
-  Future<List<Produto>> filtrarProdutos(bool isComprado) async {
     List<Produto> temp = [];
     QuerySnapshot<Map<String, dynamic>> snapshot = await firestore
         .collection('listins')
         .doc(widget.listin.id)
         .collection('produtos')
-        .where("isComprado", isEqualTo: isComprado)
+        // .where("isComprado", isEqualTo: isComprado)
+        .orderBy(ordem.name, descending: isDecrescente)
         .get();
 
     for (var doc in snapshot.docs) {
@@ -276,6 +308,37 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
       temp.add(produto);
     }
 
-    return temp;
+    filtrarProdutos(temp);
+  }
+
+  filtrarProdutos(List<Produto> listaProdutos) {
+    List<Produto> tempPlanejados = [];
+    List<Produto> tempPegos = [];
+
+    for (var produto in listaProdutos) {
+      if (produto.isComprado) {
+        tempPegos.add(produto);
+      } else {
+        tempPlanejados.add(produto);
+      }
+    }
+
+    setState(() {
+      listaProdutosPegos = tempPegos;
+      listaProdutosPlanejados = tempPlanejados;
+    });
+  }
+
+  alternarComprado(Produto produto) async {
+    produto.isComprado = !produto.isComprado;
+
+    await firestore
+        .collection("listins")
+        .doc(widget.listin.id)
+        .collection('produtos')
+        .doc(produto.id)
+        .update({"isComprado": produto.isComprado});
+
+    refresh();
   }
 }

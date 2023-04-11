@@ -5,11 +5,13 @@ class ListTileProduto extends StatelessWidget {
   final Produto produto;
   final bool isComprado;
   final Function showModal;
+  final Function iconClick;
   const ListTileProduto({
     super.key,
     required this.produto,
     required this.isComprado,
     required this.showModal,
+    required this.iconClick,
   });
 
   @override
@@ -18,8 +20,11 @@ class ListTileProduto extends StatelessWidget {
       onTap: () {
         showModal(model: produto);
       },
-      leading: Icon(
-        (isComprado) ? Icons.shopping_basket : Icons.check,
+      leading: IconButton(
+        onPressed: () {
+          iconClick(produto);
+        },
+        icon: Icon((isComprado) ? Icons.shopping_basket : Icons.check),
       ),
       title: Text(
         (produto.amount == null)
