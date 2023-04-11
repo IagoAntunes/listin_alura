@@ -25,6 +25,7 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
   @override
   void initState() {
     super.initState();
+    setupListeners();
     refresh();
   }
 
@@ -340,5 +341,17 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
         .update({"isComprado": produto.isComprado});
 
     refresh();
+  }
+
+  setupListeners() {
+    firestore
+        .collection('listins')
+        .doc(widget.listin.id)
+        .collection("produtos")
+        .orderBy(ordem.name, descending: isDecrescente)
+        .snapshots()
+        .listen((snapshot) {
+      print("MUDOU");
+    });
   }
 }
