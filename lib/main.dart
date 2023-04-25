@@ -5,6 +5,8 @@ import 'package:flutter_firebase_firestore_first/_core/my_colors.dart';
 import 'package:flutter_firebase_firestore_first/firebase_options.dart';
 import 'package:flutter_firebase_firestore_first/firestore/presentation/home_screen.dart';
 
+import 'authentication/screens/auth_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -12,7 +14,7 @@ void main() async {
   );
   runApp(const MyApp());
   FirebaseFirestore firestore = FirebaseFirestore.instance;
-  firestore.collection('teste').doc('testando1').set({"funcionou": true});
+  // firestore.collection('teste').doc('testando1').set({"funcionou": true});
 }
 
 class MyApp extends StatelessWidget {
@@ -43,7 +45,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: const AuthScreen(),
     );
   }
 }
