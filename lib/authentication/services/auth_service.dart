@@ -58,7 +58,7 @@ class AuthService {
 
   Future<String?> deslogar() async {
     try {
-      await _firebaseAuth.;
+      await _firebaseAuth.signOut();
     } on FirebaseAuthException catch (e) {
       return e.code;
     }
