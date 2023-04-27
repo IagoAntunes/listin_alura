@@ -187,14 +187,15 @@ class _AuthScreenState extends State<AuthScreen> {
 
   _entrarUsuario({required String email, required String senha}) {
     authService.entrarUsuario(email: email, senha: senha).then((erro) {
+      if (erro != null) {
+        showSnackBar(context: context, mensagem: erro);
+      }
       if (erro == null) {
         showSnackBar(
             context: context, mensagem: "Logado com Sucesso", isErro: false);
         Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => const HomeScreen(),
         ));
-      } else {
-        showSnackBar(context: context, mensagem: erro);
       }
     });
   }
@@ -208,10 +209,7 @@ class _AuthScreenState extends State<AuthScreen> {
       nome: nome,
     )
         .then((String? erro) {
-      if (erro == null) {
-        showSnackBar(
-            context: context, mensagem: "Conta Criada!", isErro: false);
-      } else {
+      if (erro != null) {
         showSnackBar(context: context, mensagem: erro);
       }
     });
