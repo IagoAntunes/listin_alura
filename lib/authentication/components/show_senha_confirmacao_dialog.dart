@@ -36,12 +36,12 @@ showSenhaConfirmacaoDialog({
             onPressed: () async {
               await AuthService()
                   .removerConta(senha: senhaConfirmacaoController.text)
-                  .then((String? erro) {
-                if (erro == null) {
+                  .then((String? erro) async {
+                if (erro != null) {
                   Navigator.pop(context);
+                  await AuthService().deslogar();
                 }
               });
-              // await AuthService().deslogar();
             },
             child: const Text("Excluir Conta"),
           ),

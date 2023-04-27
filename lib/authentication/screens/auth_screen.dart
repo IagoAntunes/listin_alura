@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase_firestore_first/authentication/components/show_snackbar.dart';
 import 'package:flutter_firebase_firestore_first/authentication/services/auth_service.dart';
@@ -194,7 +195,8 @@ class _AuthScreenState extends State<AuthScreen> {
         showSnackBar(
             context: context, mensagem: "Logado com Sucesso", isErro: false);
         Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
+          builder: (context) =>
+              HomeScreen(user: FirebaseAuth.instance.currentUser!),
         ));
       }
     });

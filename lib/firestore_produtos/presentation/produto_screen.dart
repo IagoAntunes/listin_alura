@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../firestore/models/listin.dart';
 import '../helpers/enum_order.dart';
 import '../model/produto.dart';
+import '../services/produto_service.dart';
 import 'widgets/list_tile_produto.dart';
 
 class ProdutoScreen extends StatefulWidget {
@@ -18,9 +19,10 @@ class ProdutoScreen extends StatefulWidget {
 
 class _ProdutoScreenState extends State<ProdutoScreen> {
   List<Produto> listaProdutosPlanejados = [];
-
   List<Produto> listaProdutosPegos = [];
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  ProdutoService produtoService = ProdutoService();
+
   OrdemProduto ordem = OrdemProduto.name;
   bool isDecrescente = false;
 
@@ -28,14 +30,14 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
 
   @override
   void initState() {
-    super.initState();
     setupListeners();
+    super.initState();
   }
 
   @override
   void dispose() {
-    super.dispose();
     listener.cancel();
+    super.dispose();
   }
 
   @override
@@ -45,6 +47,22 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
         title: Text(widget.listin.name),
         actions: [
           PopupMenuButton(
+            itemBuilder: (context) {
+              return [
+                const PopupMenuItem(
+                  value: OrdemProduto.name,
+                  child: Text("Ordenar por nome"),
+                ),
+                const PopupMenuItem(
+                  value: OrdemProduto.amount,
+                  child: Text("Ordenar por quantidade"),
+                ),
+                const PopupMenuItem(
+                  value: OrdemProduto.price,
+                  child: Text("Ordenar por preço"),
+                ),
+              ];
+            },
             onSelected: (value) {
               setState(() {
                 if (ordem == value) {
@@ -55,22 +73,6 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                 }
               });
               refresh();
-            },
-            itemBuilder: (context) {
-              return const [
-                PopupMenuItem(
-                  value: OrdemProduto.name,
-                  child: Text("Ordernar por Nome"),
-                ),
-                PopupMenuItem(
-                  value: OrdemProduto.amount,
-                  child: Text("Ordernar por Quantidade"),
-                ),
-                PopupMenuItem(
-                  value: OrdemProduto.price,
-                  child: Text("Ordernar por Preco"),
-                )
-              ];
             },
           )
         ],
@@ -118,10 +120,11 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
               children: List.generate(listaProdutosPlanejados.length, (index) {
                 Produto produto = listaProdutosPlanejados[index];
                 return ListTileProduto(
+                  listinId: widget.listin.id,
                   produto: produto,
                   isComprado: false,
                   showModal: showFormModal,
-                  iconClick: alternarComprado,
+                  iconClick: produtoService.alternarComprado,
                   trailClick: removerProduto,
                 );
               }),
@@ -139,19 +142,17 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
               ),
             ),
             Column(
-              children: List.generate(
-                listaProdutosPegos.length,
-                (index) {
-                  Produto produto = listaProdutosPegos[index];
-                  return ListTileProduto(
-                    produto: produto,
-                    isComprado: true,
-                    showModal: showFormModal,
-                    iconClick: alternarComprado,
-                    trailClick: removerProduto,
-                  );
-                },
-              ),
+              children: List.generate(listaProdutosPegos.length, (index) {
+                Produto produto = listaProdutosPegos[index];
+                return ListTileProduto(
+                  listinId: widget.listin.id,
+                  produto: produto,
+                  isComprado: true,
+                  showModal: showFormModal,
+                  iconClick: produtoService.alternarComprado,
+                  trailClick: removerProduto,
+                );
+              }),
             ),
           ],
         ),
@@ -281,15 +282,11 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
                         produto.price = double.parse(priceController.text);
                       }
 
-                      //  Salvar no Firestore
-                      firestore
-                          .collection('listins')
-                          .doc(widget.listin.id)
-                          .collection('produtos')
-                          .doc(produto.id)
-                          .set(produto.toMap());
-                      // Atualizar a lista
-                      //refresh();
+                      // Salvar no Firestore
+                      produtoService.adicionarProduto(
+                        listinId: widget.listin.id,
+                        produto: produto,
+                      );
 
                       // Fechar o Modal
                       Navigator.pop(context);
@@ -306,21 +303,17 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
   }
 
   refresh({QuerySnapshot<Map<String, dynamic>>? snapshot}) async {
-    List<Produto> temp = [];
-    snapshot ??= await firestore
-        .collection('listins')
-        .doc(widget.listin.id)
-        .collection('produtos')
-        // .where("isComprado", isEqualTo: isComprado)
-        .orderBy(ordem.name, descending: isDecrescente)
-        .get();
+    List<Produto> produtosResgatados = await produtoService.lerProdutos(
+        isDecrescente: isDecrescente,
+        listinId: widget.listin.id,
+        ordem: ordem,
+        snapshot: snapshot);
 
-    for (var doc in snapshot.docs) {
-      Produto produto = Produto.fromMap(doc.data());
-      temp.add(produto);
+    if (snapshot != null) {
+      verificarAlteracao(snapshot);
     }
 
-    filtrarProdutos(temp);
+    filtrarProdutos(produtosResgatados);
   }
 
   filtrarProdutos(List<Produto> listaProdutos) {
@@ -341,47 +334,59 @@ class _ProdutoScreenState extends State<ProdutoScreen> {
     });
   }
 
-  alternarComprado(Produto produto) async {
-    produto.isComprado = !produto.isComprado;
-
-    await firestore
-        .collection("listins")
-        .doc(widget.listin.id)
-        .collection('produtos')
-        .doc(produto.id)
-        .update({"isComprado": produto.isComprado});
-
-    // refresh();
-  }
-
   setupListeners() {
-    listener = firestore
-        .collection('listins')
-        .doc(widget.listin.id)
-        .collection("produtos")
-        .orderBy(ordem.name, descending: isDecrescente)
-        .snapshots()
-        .listen((snapshot) {
-      refresh(snapshot: snapshot);
-    });
+    listener = produtoService.conectarStream(
+        onChange: refresh,
+        listinId: widget.listin.id,
+        ordem: ordem,
+        isDecrescente: isDecrescente);
   }
 
   removerProduto(Produto produto) async {
-    await firestore
-        .collection('listins')
-        .doc(widget.listin.id)
-        .collection('produtos')
-        .doc(produto.id)
-        .delete();
+    await produtoService.removerProduto(
+      produto: produto,
+      listinId: widget.listin.id,
+    );
   }
 
   double calcularPrecoPegos() {
     double total = 0;
-    for (var produto in listaProdutosPegos) {
+    for (Produto produto in listaProdutosPegos) {
       if (produto.amount != null && produto.price != null) {
         total += (produto.amount! * produto.price!);
       }
     }
     return total;
+  }
+
+  verificarAlteracao(QuerySnapshot<Map<String, dynamic>> snapshot) {
+    if (snapshot.docChanges.length == 1) {
+      for (DocumentChange docChange in snapshot.docChanges) {
+        String tipo = "";
+        Color cor = Colors.black;
+        switch (docChange.type) {
+          case DocumentChangeType.added:
+            tipo = "Novo Produto";
+            cor = Colors.green;
+            break;
+          case DocumentChangeType.modified:
+            tipo = "Produto alterado";
+            cor = Colors.orange;
+            break;
+          case DocumentChangeType.removed:
+            tipo = "Produto removido";
+            cor = Colors.red;
+            break;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: cor,
+            content: Text(
+              "$tipo: ${Produto.fromMap(docChange.doc.data() as Map<String, dynamic>).name}",
+            ),
+          ),
+        );
+      }
+    }
   }
 }
