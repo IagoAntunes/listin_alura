@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_firestore_first/authentication/components/show_senha_confirmacao_dialog.dart';
 import 'package:flutter_firebase_firestore_first/authentication/services/auth_service.dart';
 import 'package:flutter_firebase_firestore_first/firestore_produtos/presentation/produto_screen.dart';
 import 'package:uuid/uuid.dart';
@@ -48,8 +49,18 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           children: [
             ListTile(
-              leading: Icon(Icons.logout),
-              title: Text("Logout"),
+              leading: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+              title: const Text("Remover Conta"),
+              onTap: () async {
+                await showSenhaConfirmacaoDialog(context: context, email: "");
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
               onTap: () async {
                 await AuthService().deslogar();
               },
